@@ -15,5 +15,5 @@ services:
         MONGO_INITDB_ROOT_PASSWORD: bismillah
       volumes:
         - ./mongo:/data/db
-      expose:
-        - 27017
+      ports:
+        - 27017:27017
