@@ -10,19 +10,24 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"context"
+	"time"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
 	// initialize searcher
-	searcher := &Searcher{}
-	err := searcher.Load("data.gz")
-	if err != nil {
-		log.Fatalf("unable to load search data due: %v", err)
-	}
+	// searcher := &Searcher{}
+	// err := searcher.LoadDatabase()
+	// if err != nil {
+	// 	log.Fatalf("unable to load search data due: %v", err)
+	// }
 	// define http handlers
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/", fs)
-	http.HandleFunc("/search", handleSearch(searcher))
+	http.HandleFunc("/search", LoadDatabase())
 	// define port, we need to set it as env for Heroku deployment
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -30,7 +35,7 @@ func main() {
 	}
 	// start server
 	fmt.Printf("Server is listening on %s...", port)
-	err = http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
 	if err != nil {
 		log.Fatalf("unable to start server due: %v", err)
 	}
@@ -65,6 +70,65 @@ func handleSearch(s *Searcher) http.HandlerFunc {
 
 type Searcher struct {
 	records []Record
+}
+
+func LoadDatabase() http.HandlerFunc {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// fetch query string from query params
+			q := r.URL.Query().Get("q")
+			if len(q) == 0 {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("missing search query in query params"))
+				return
+			}
+
+			uri := "mongodb://localhost:27017"
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+			if err != nil { log.Fatal(err) }
+
+			collection := client.Database("kraicklist").Collection("data")
+
+			query := bson.M{
+				"$text": bson.M{
+					"$search": q,
+				},
+			}
+			cur, err := collection.Find(ctx, query)
+			defer cur.Close(ctx)
+
+			var records []Record
+			for cur.Next(ctx) {
+				// var result bson.D
+				var result Record
+				// result := Record{}
+				err := cur.Decode(&result)
+				if err != nil { log.Fatal(err) }
+				
+				data, err := json.Marshal(&result)
+				if err != nil { log.Fatal(err) }
+
+				err = json.Unmarshal(data, &result)
+				if (err != nil) { continue }
+
+				records = append(records, result)
+			}
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+			// s.records = records
+			// output success response
+			buf := new(bytes.Buffer)
+			encoder := json.NewEncoder(buf)
+			encoder.Encode(records)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(buf.Bytes())
+		},
+	)
 }
 
 func (s *Searcher) Load(filepath string) error {
