@@ -1,0 +1,22 @@
+version: '3'
+services:
+    go:
+      restart: always
+      container_name: go
+      build: .
+      volumes:
+        - $PWD:/usr/src/myapp
+      working_dir: /usr/src/myapp
+      ports:
+        - 3001:3001
+    mongo:
+      restart: always
+      container_name: mongo
+      image: mongo:latest
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: root
+        MONGO_INITDB_ROOT_PASSWORD: bismillah
+      volumes:
+        - ./mongo:/data/db
+      expose:
+        - 27017
