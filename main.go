@@ -84,7 +84,7 @@ func LoadDatabase() http.HandlerFunc {
 			}
 
 			uri := os.Getenv("MONGO_URL")
-			if port == "" {
+			if uri == "" {
 				uri = "mongodb://localhost:27017"
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
