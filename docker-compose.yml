@@ -4,9 +4,6 @@ services:
       restart: always
       container_name: go
       build: .
-      volumes:
-        - $PWD:/usr/src/myapp
-      working_dir: /usr/src/myapp
       ports:
         - 3001:3001
     mongo:

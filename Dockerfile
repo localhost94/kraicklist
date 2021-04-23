@@ -8,7 +8,7 @@ RUN mkdir /app
 ADD . /app
 WORKDIR /app
 ## We want to build our application's binary executable
-RUN CGO_ENABLED=0 GOOS=linux go build -o main ./...
+RUN go build -o main ./...
 
 ## the lightweight scratch image we'll
 ## run our application within
@@ -18,4 +18,5 @@ FROM alpine:latest AS production
 COPY --from=builder /app .
 ## we can then kick off our newly compiled
 ## binary exectuable!!
+EXPOSE 3001
 CMD ["./main"]
