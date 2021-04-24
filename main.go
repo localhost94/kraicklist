@@ -104,18 +104,10 @@ func LoadDatabase() http.HandlerFunc {
 
 			var records []Record
 			for cur.Next(ctx) {
-				// var result bson.D
 				var result Record
-				// result := Record{}
 				err := cur.Decode(&result)
 				if err != nil { log.Fatal(err) }
 				
-				data, err := json.Marshal(&result)
-				if err != nil { log.Fatal(err) }
-
-				err = json.Unmarshal(data, &result)
-				if (err != nil) { continue }
-
 				records = append(records, result)
 			}
 			if err != nil {
@@ -123,7 +115,6 @@ func LoadDatabase() http.HandlerFunc {
 				w.Write([]byte(err.Error()))
 				return
 			}
-			// s.records = records
 			// output success response
 			buf := new(bytes.Buffer)
 			encoder := json.NewEncoder(buf)
