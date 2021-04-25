@@ -18,12 +18,6 @@ import (
 )
 
 func main() {
-	// initialize searcher
-	// searcher := &Searcher{}
-	// err := searcher.LoadDatabase()
-	// if err != nil {
-	// 	log.Fatalf("unable to load search data due: %v", err)
-	// }
 	// define http handlers
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/", fs)
