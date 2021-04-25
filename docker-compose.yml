@@ -6,3 +6,8 @@ services:
       build: .
       ports:
         - 3002:3001
+
+networks:
+  default:
+    external:
+      name: kraicklist_default
