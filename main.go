@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"github.com/meilisearch/meilisearch-go"
 )
 
