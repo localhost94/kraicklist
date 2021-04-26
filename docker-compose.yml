@@ -5,7 +5,7 @@ services:
       container_name: go
       build: .
       ports:
-        - 3002:3001
+        - 3001:3001
 
 networks:
   default:
