@@ -15,7 +15,7 @@ const BASE_URL = 'http://54.255.174.29:3001/search';
 
 export default () => {
   const keyword = 'iphone';
-  let myObjects = http.get(`${BASE_URL}?q=${keyword}&sortBy=title&sortType=asc&page=1&perpage=10`).json();
+  let myObjects = http.get(`${BASE_URL}?q=${keyword}`).json();
   check(myObjects, { 'retrieved data': (obj) => obj.length > 0 });
 
   sleep(1);
