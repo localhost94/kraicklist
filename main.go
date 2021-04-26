@@ -10,11 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"context"
-	"time"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/meilisearch/meilisearch-go"
 )
 
 func main() {
@@ -35,33 +31,6 @@ func main() {
 	}
 }
 
-func handleSearch(s *Searcher) http.HandlerFunc {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			// fetch query string from query params
-			q := r.URL.Query().Get("q")
-			if len(q) == 0 {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("missing search query in query params"))
-				return
-			}
-			// search relevant records
-			records, err := s.Search(q)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
-				return
-			}
-			// output success response
-			buf := new(bytes.Buffer)
-			encoder := json.NewEncoder(buf)
-			encoder.Encode(records)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(buf.Bytes())
-		},
-	)
-}
-
 type Searcher struct {
 	records []Record
 }
@@ -76,34 +45,15 @@ func LoadDatabase() http.HandlerFunc {
 				w.Write([]byte("missing search query in query params"))
 				return
 			}
-			credential := options.Credential{
-					Username: "root",
-					Password: "bismillah",
-			}
-			uri := "mongodb://mongo:27017"
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-			client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetAuth(credential))
-			if err != nil { log.Fatal(err) }
+			var client = meilisearch.NewClient(meilisearch.Config{
+				Host: "http://127.0.0.1:7700",
+				APIKey: "eea8919a-6975-48de-bf5f-1930b4fd9fa8",
+			})
+			
+			results, err := client.Search("text_index").Search(meilisearch.SearchRequest{
+					Query: q,
+			})
 
-			collection := client.Database("kraicklist").Collection("data")
-
-			query := bson.M{
-				"$text": bson.M{
-					"$search": q,
-				},
-			}
-			cur, err := collection.Find(ctx, query)
-			defer cur.Close(ctx)
-
-			var records []Record
-			for cur.Next(ctx) {
-				var result Record
-				err := cur.Decode(&result)
-				if err != nil { log.Fatal(err) }
-				
-				records = append(records, result)
-			}
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
@@ -112,49 +62,11 @@ func LoadDatabase() http.HandlerFunc {
 			// output success response
 			buf := new(bytes.Buffer)
 			encoder := json.NewEncoder(buf)
-			encoder.Encode(records)
+			encoder.Encode(results.Hits)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(buf.Bytes())
 		},
 	)
-}
-
-func (s *Searcher) Load(filepath string) error {
-	// open file
-	file, err := os.Open(filepath)
-	if err != nil {
-		return fmt.Errorf("unable to open source file due: %v", err)
-	}
-	defer file.Close()
-	// read as gzip
-	reader, err := gzip.NewReader(file)
-	if err != nil {
-		return fmt.Errorf("unable to initialize gzip reader due: %v", err)
-	}
-	// read the reader using scanner to contstruct records
-	var records []Record
-	cs := bufio.NewScanner(reader)
-	for cs.Scan() {
-		var r Record
-		err = json.Unmarshal(cs.Bytes(), &r)
-		if err != nil {
-			continue
-		}
-		records = append(records, r)
-	}
-	s.records = records
-
-	return nil
-}
-
-func (s *Searcher) Search(query string) ([]Record, error) {
-	var result []Record
-	for _, record := range s.records {
-		if strings.Contains(record.Title, query) || strings.Contains(record.Content, query) {
-			result = append(result, record)
-		}
-	}
-	return result, nil
 }
 
 type Record struct {
