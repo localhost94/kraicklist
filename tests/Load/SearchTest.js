@@ -6,12 +6,12 @@ export let options = {
   duration: '10s',
 
   thresholds: {
-    http_req_duration: ['p(95)<500'], // 99% of requests must complete below 1.5s
+    http_req_duration: ['p(90)<500'], // 99% of requests must complete below 1.5s
   },
 };
 
-// const BASE_URL = 'http://54.255.174.29:3001/list';
-const BASE_URL = 'http://127.0.0.1:3001/search';
+const BASE_URL = 'http://54.255.174.29:3001/list';
+// const BASE_URL = 'http://127.0.0.1:3001/search';
 
 export default () => {
   const keyword = 'iphone';
