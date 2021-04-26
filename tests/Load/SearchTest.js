@@ -10,7 +10,7 @@ export let options = {
   },
 };
 
-const BASE_URL = 'http://54.255.174.29:3001/list';
+const BASE_URL = 'http://54.255.174.29:3001/search';
 // const BASE_URL = 'http://127.0.0.1:3001/search';
 
 export default () => {
